@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+debug.log
+
+# Dependencies (if any)
+node_modules/
+vendor/
+
+# Build artifacts
+*.zip
+*.tar.gz
+
+# Temporary files
+*.tmp
+*.bak

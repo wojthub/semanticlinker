@@ -1,0 +1,372 @@
+/* ═══════════════════════════════════════════════════════════════════
+ * SemanticLinker AI – Admin Styles
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page title ──────────────────────────────────────────────────── */
+.sl-page-title .dashicons {
+	margin-right: 4px;
+	vertical-align: middle;
+}
+
+/* ── Status bar (top of Settings page) ───────────────────────────── */
+.sl-status-bar {
+	background: #f1f2f3;
+	border-left: 4px solid #0073aa;
+	border-radius: 0 3px 3px 0;
+	padding: 10px 18px;
+	margin-bottom: 18px;
+	display: flex;
+	gap: 28px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+.sl-status-item {
+	font-size: 14px;
+	color: #555;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────── */
+.sl-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	border-radius: 3px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+.sl-badge-ok       { background: #d4edda; color: #155724; }
+.sl-badge-warn     { background: #fff3cd; color: #856404; }
+.sl-badge-filtered { background: #e2e3e5; color: #6c757d; }
+.sl-badge-cluster  { background: #cce5ff; color: #004085; }
+
+/* ── Two-column layout (settings + sidebar) ─────────────────────── */
+.sl-layout {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+.sl-main {
+	flex: 1;
+	min-width: 0;
+}
+.sl-sidebar {
+	width: 340px;
+	flex-shrink: 0;
+	position: sticky;
+	top: 32px;
+}
+@media (max-width: 1200px) {
+	.sl-layout {
+		flex-direction: column;
+	}
+	.sl-sidebar {
+		width: 100%;
+		position: static;
+	}
+}
+
+/* ── Cards (settings sections) ───────────────────────────────────── */
+.sl-card {
+	background: #fff;
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+	padding: 20px 24px;
+	margin-bottom: 22px;
+}
+
+/* Sidebar card styling */
+.sl-sidebar .sl-card {
+	margin-bottom: 16px;
+}
+.sl-sidebar .sl-card-title {
+	font-size: 14px;
+	margin-bottom: 12px;
+}
+.sl-card-title {
+	margin: 0 0 16px;
+	font-size: 15px;
+	color: #23282d;
+	border-bottom: 1px solid #eee;
+	padding-bottom: 8px;
+}
+
+/* ── Form helpers (Settings) ─────────────────────────────────────── */
+.sl-range {
+	width: 200px;
+	vertical-align: middle;
+}
+.sl-range-val {
+	display: inline-block;
+	min-width: 38px;
+	margin-left: 8px;
+	font-weight: 700;
+	color: #0073aa;
+	font-size: 15px;
+}
+
+.sl-checkbox-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 6px 24px;
+}
+.sl-cb-label {
+	font-size: 14px;
+	color: #333;
+}
+.sl-cb-label code {
+	font-size: 12px;
+	color: #666;
+}
+
+/* Re-index status text (next to the button) */
+.sl-status-text {
+	display: inline-block;
+	margin-left: 18px;
+	font-style: italic;
+	font-size: 14px;
+	color: #666;
+	min-width: 200px;
+}
+
+/* ── Dashboard – stats strip ─────────────────────────────────────── */
+.sl-stats {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+.sl-toggle-rejected {
+	font-size: 14px;
+	color: #555;
+	margin-left: 8px;
+}
+
+/* ── Dashboard – rejected-row toggle ─────────────────────────────── */
+.sl-row-rejected {
+	display: none;
+	opacity: 0.50;
+}
+#sl-links-table.sl-show-rejected .sl-row-rejected {
+	display: table-row;
+}
+
+/* ── Dashboard – filtered-row toggle (AI filtered) ───────────────── */
+.sl-row-filtered {
+	display: none;
+	opacity: 0.55;
+	background: #f8f9fa !important;
+}
+#sl-links-table.sl-show-filtered .sl-row-filtered {
+	display: table-row;
+}
+
+/* ── Dashboard – score bar ───────────────────────────────────────── */
+.sl-bar {
+	width: 72px;
+	height: 7px;
+	background: #e0e0e0;
+	border-radius: 4px;
+	overflow: hidden;
+	display: inline-block;
+	vertical-align: middle;
+}
+.sl-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #28a745, #007bff);
+	border-radius: 4px;
+	transition: width 0.25s ease;
+}
+.sl-score-num {
+	font-weight: 600;
+	font-size: 13px;
+	margin-left: 6px;
+	color: #23282d;
+}
+
+/* ── Dashboard – column widths ───────────────────────────────────── */
+.sl-col-source  { min-width: 180px; }
+.sl-col-anchor  { min-width: 130px; }
+.sl-col-target  { min-width: 210px; word-break: break-all; }
+.sl-col-score   { width: 120px; white-space: nowrap; }
+.sl-col-status  { width: 100px; text-align: center; }
+.sl-col-action  { width: 120px; text-align: center; }
+
+/* ── Dashboard – anchor code chip ────────────────────────────────── */
+.sl-anchor {
+	background: #f0f4f8;
+	padding: 2px 7px;
+	border-radius: 3px;
+	font-size: 13px;
+	color: #2c3e50;
+}
+
+/* ── Empty-state placeholder ─────────────────────────────────────── */
+.sl-empty {
+	background: #f9f9f9;
+	border: 1px dashed #ccc;
+	border-radius: 5px;
+	padding: 36px 24px;
+	text-align: center;
+	color: #555;
+	font-size: 15px;
+}
+
+/* ── Debug panel ────────────────────────────────────────────────────── */
+.sl-debug-panel {
+	margin-top: 40px;
+	padding-top: 20px;
+	border-top: 2px dashed #ddd;
+}
+.sl-debug-panel h2 {
+	color: #666;
+	font-size: 16px;
+}
+.sl-debug-panel h2 .dashicons {
+	margin-right: 6px;
+	vertical-align: middle;
+}
+.sl-debug-actions {
+	margin-bottom: 20px;
+	display: flex;
+	gap: 10px;
+}
+.sl-debug-box {
+	background: #f9f9f9;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	padding: 15px;
+	margin-bottom: 20px;
+	overflow-x: auto;
+}
+.sl-debug-box table {
+	margin: 0;
+}
+.sl-debug-box th {
+	text-align: left;
+	padding: 6px 12px;
+	background: #f0f0f0;
+}
+.sl-debug-box td {
+	padding: 6px 12px;
+}
+.sl-debug-box pre {
+	background: #fff;
+	border: 1px solid #ddd;
+	padding: 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	max-height: 150px;
+	overflow: auto;
+}
+#sl-debug-logs table {
+	font-size: 12px;
+}
+#sl-debug-logs th,
+#sl-debug-logs td {
+	vertical-align: top;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Dashboard – Anchor Cluster Grouping
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Cluster header row */
+.sl-cluster-header {
+	background: #e8f4fc !important;
+	border-top: 2px solid #0073aa;
+}
+.sl-cluster-header td {
+	padding: 10px 12px !important;
+}
+.sl-cluster-info {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.sl-cluster-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+.sl-cluster-anchor {
+	font-size: 14px;
+	color: #23282d;
+}
+.sl-cluster-variants {
+	font-size: 12px;
+	color: #888;
+	font-style: italic;
+}
+.sl-cluster-anchor code {
+	background: #fff;
+	padding: 3px 10px;
+	border-radius: 3px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #0073aa;
+	border: 1px solid #c3d9e8;
+}
+.sl-cluster-arrow {
+	color: #888;
+	font-size: 16px;
+}
+.sl-cluster-target {
+	font-size: 13px;
+}
+.sl-cluster-target a {
+	color: #0073aa;
+	text-decoration: none;
+}
+.sl-cluster-target a:hover {
+	text-decoration: underline;
+}
+.sl-cluster-count {
+	font-size: 12px;
+	color: #666;
+	background: #fff;
+	padding: 2px 8px;
+	border-radius: 10px;
+	border: 1px solid #ddd;
+}
+
+/* Alternating cluster backgrounds */
+.sl-cluster-odd {
+	background-color: #fff;
+}
+.sl-cluster-even {
+	background-color: #f9fbfc;
+}
+
+/* Cluster header for even clusters */
+.sl-cluster-header.sl-cluster-even {
+	background: #f0f7ed !important;
+	border-top-color: #46b450;
+}
+.sl-cluster-header.sl-cluster-even .sl-cluster-anchor code {
+	color: #388e3c;
+	border-color: #c3e6cb;
+}
+
+/* Override striped for cluster grouping */
+.sl-links-table tbody tr.sl-cluster-odd:nth-child(odd),
+.sl-links-table tbody tr.sl-cluster-odd:nth-child(even) {
+	background-color: #fff;
+}
+.sl-links-table tbody tr.sl-cluster-even:nth-child(odd),
+.sl-links-table tbody tr.sl-cluster-even:nth-child(even) {
+	background-color: #f9fbfc;
+}
+
+/* Hover effect */
+.sl-links-table tbody tr.sl-row:hover {
+	background-color: #f0f6fc !important;
+}
+
+/* Visual separator between clusters */
+.sl-cluster-header + .sl-row {
+	border-top: none;
+}
