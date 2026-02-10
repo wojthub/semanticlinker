@@ -397,7 +397,7 @@ $api_key_decrypted = SL_Settings::get_api_key();
 			<?php wp_nonce_field( 'sl_settings_save', 'sl_nonce' ); ?>
 			<input type="hidden" name="sl_save" value="1" />
 			<!-- Preserve other settings by including them as hidden fields -->
-			<input type="hidden" name="api_key" value="<?php echo esc_attr( $api_key_decrypted ); ?>" />
+			<!-- Note: api_key is NOT included here - empty value preserves existing key -->
 			<input type="hidden" name="embedding_model" value="<?php echo esc_attr( $s['embedding_model'] ); ?>" />
 			<input type="hidden" name="similarity_threshold" value="<?php echo esc_attr( $s['similarity_threshold'] ); ?>" />
 			<input type="hidden" name="max_links_per_post" value="<?php echo esc_attr( $s['max_links_per_post'] ); ?>" />

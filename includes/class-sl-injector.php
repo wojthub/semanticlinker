@@ -87,8 +87,14 @@ class SL_Injector {
 			return $content;
 		}
 
-		/* Filter out links to non-published posts (trashed, draft, etc.) */
+		/* Filter out links to non-published posts (trashed, draft, etc.)
+		 * Custom URLs have target_post_id = 0, so allow those unconditionally */
 		$links = array_filter( $links, function ( $link ) {
+			// Custom URLs (external links) have target_post_id = 0 - always allow
+			if ( (int) $link->target_post_id === 0 ) {
+				return true;
+			}
+			// Internal links - check if target post exists and is published
 			$target_post = get_post( $link->target_post_id );
 			return $target_post && $target_post->post_status === 'publish';
 		} );
@@ -119,15 +125,16 @@ class SL_Injector {
 		global $wpdb;
 
 		// Delete all transients with our prefix
-		$prefix = '_transient_' . self::CACHE_PREFIX;
-		$timeout_prefix = '_transient_timeout_' . self::CACHE_PREFIX;
+		// Use esc_like() to escape any LIKE wildcards in the prefix (defense in depth)
+		$prefix = $wpdb->esc_like( '_transient_' . self::CACHE_PREFIX ) . '%';
+		$timeout_prefix = $wpdb->esc_like( '_transient_timeout_' . self::CACHE_PREFIX ) . '%';
 
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options}
 				 WHERE option_name LIKE %s OR option_name LIKE %s",
-				$prefix . '%',
-				$timeout_prefix . '%'
+				$prefix,
+				$timeout_prefix
 			)
 		);
 

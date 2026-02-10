@@ -113,9 +113,16 @@ class SL_Settings {
 	public static function sanitize( array $input ): array {
 		$s = [];
 
-		/* API key – encrypt before storing for security */
+		/* API key – encrypt before storing for security
+		 * If input is empty, preserve the existing key (for sidebar form that doesn't include it) */
 		$raw_key = sanitize_text_field( $input['api_key'] ?? '' );
-		$s['api_key'] = ! empty( $raw_key ) ? SL_Security::encrypt_api_key( $raw_key ) : '';
+		if ( ! empty( $raw_key ) ) {
+			$s['api_key'] = SL_Security::encrypt_api_key( $raw_key );
+		} else {
+			// Preserve existing encrypted key
+			$existing = get_option( self::OPTION_KEY, [] );
+			$s['api_key'] = $existing['api_key'] ?? '';
+		}
 
 		/* Embedding model – free text input with default */
 		$model = sanitize_text_field( $input['embedding_model'] ?? '' );

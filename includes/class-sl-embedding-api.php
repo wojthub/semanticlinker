@@ -29,7 +29,27 @@ class SL_Embedding_API {
 	public function __construct( $api_key = null, $model = null ) {
 		// Use decrypted API key from settings
 		$this->api_key = $api_key !== null ? $api_key : SL_Settings::get_api_key();
-		$this->model   = $model  !== null ? $model  : SL_Settings::get( 'embedding_model', 'gemini-embedding-001' );
+		$raw_model     = $model  !== null ? $model  : SL_Settings::get( 'embedding_model', 'gemini-embedding-001' );
+		$this->model   = self::sanitize_model_name( $raw_model );
+	}
+
+	/**
+	 * Sanitize model name to prevent URL injection.
+	 * Only allows alphanumeric characters, hyphens, underscores, and dots.
+	 *
+	 * @param string $model  Raw model name.
+	 * @return string        Sanitized model name.
+	 */
+	private static function sanitize_model_name( string $model ): string {
+		// Remove any characters that are not alphanumeric, hyphen, underscore, or dot
+		$sanitized = preg_replace( '/[^a-zA-Z0-9\-_.]/', '', $model );
+
+		// Ensure we have a valid model name
+		if ( empty( $sanitized ) ) {
+			return 'gemini-embedding-001';  // Fallback to default
+		}
+
+		return $sanitized;
 	}
 
 	/**
@@ -233,7 +253,7 @@ Zwróć wynik:
 			$target_title
 		);
 
-		$filter_model = SL_Settings::get( 'filter_model', 'gemini-2.5-flash' );
+		$filter_model = self::sanitize_model_name( SL_Settings::get( 'filter_model', 'gemini-2.5-flash' ) );
 		$url = sprintf(
 			'https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s',
 			$filter_model,

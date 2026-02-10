@@ -172,11 +172,8 @@ class SL_Debug {
 
 		$settings = SL_Settings::all();
 
-		// Check API key
-		$api_key_status = 'not_set';
-		if ( ! empty( $settings['api_key'] ) ) {
-			$api_key_status = 'set (' . strlen( $settings['api_key'] ) . ' chars, starts with: ' . substr( $settings['api_key'], 0, 8 ) . '...)';
-		}
+		// Check API key (don't expose any part of the key for security)
+		$api_key_status = ! empty( $settings['api_key'] ) ? 'configured' : 'not_set';
 
 		return [
 			'embeddings_total'       => $embeddings_count,
