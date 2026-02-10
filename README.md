@@ -1,6 +1,6 @@
 # SemanticLinker AI
 ## Autor
-SemanticLinker AI © 2024-2025
+SemanticLinker 1.1.0 AI © 2024-2025
 Wojciech Władziński
 
 
