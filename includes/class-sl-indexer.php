@@ -270,10 +270,6 @@ class SL_Indexer {
 			} else {
 				// API call failed - mark for retry, don't advance progress
 				$embedding_failed = true;
-				SL_Debug::log( 'indexer', 'ERROR: Embedding API failed for batch', [
-					'offset'      => $progress['offset'],
-					'posts_count' => count( $to_embed ),
-				] );
 			}
 		}
 
@@ -283,19 +279,41 @@ class SL_Indexer {
 			$progress['offset']    += self::AJAX_BATCH_SIZE;
 			set_transient( self::PROGRESS_KEY, $progress, HOUR_IN_SECONDS );
 		} else {
-			// Return error to frontend so user knows something went wrong
+			$pct = $progress['total_posts'] > 0
+				? round( ( $progress['processed'] / $progress['total_posts'] ) * 100 )
+				: 0;
+
+			// 429 rate-limit: signal JS to wait and retry same batch.
+			// DO NOT sleep() here - that holds the HTTP connection and causes 504 Gateway Timeout.
+			if ( SL_Embedding_API::was_rate_limited() ) {
+				SL_Debug::log( 'indexer', 'Rate limited (429) - client will retry in 2s', [
+					'offset' => $progress['offset'],
+				] );
+				return [
+					'total_posts'  => $progress['total_posts'],
+					'processed'    => $progress['processed'],
+					'phase'        => 'indexing',
+					'percent'      => $pct,
+					'rate_limited' => true,
+					'retry_after'  => 2,
+					'message'      => 'Limit API Gemini – ponawianie za 2s...',
+				];
+			}
+
+			// Other API failure
+			SL_Debug::log( 'indexer', 'ERROR: Embedding API failed for batch', [
+				'offset'      => $progress['offset'],
+				'posts_count' => count( $to_embed ),
+			] );
 			return [
 				'total_posts' => $progress['total_posts'],
 				'processed'   => $progress['processed'],
 				'phase'       => 'indexing',
-				'percent'     => $progress['total_posts'] > 0
-					? round( ( $progress['processed'] / $progress['total_posts'] ) * 100 )
-					: 0,
-				'error'       => 'Błąd API podczas generowania embeddingów. Spróbuj ponownie.',
+				'percent'     => $pct,
+				'error'       => 'Błąd API podczas generowania embeddingow. Spróbuj ponownie.',
 				'message'     => 'Błąd API - kliknij ponownie aby wznowić.',
 			];
 		}
-
 		$percent = $progress['total_posts'] > 0
 			? round( ( $progress['processed'] / $progress['total_posts'] ) * 100 )
 			: 0;

@@ -376,6 +376,11 @@
 										$progress.fadeOut();
 									}
 								}, 3000 );
+							} else if ( data.rate_limited ) {
+								// Gemini API rate limit – wait and retry same batch (progress not advanced)
+								var retryMs = ( data.retry_after || 2 ) * 1000;
+								$indexingText.text( data.message || 'Limit API – ponawianie...' );
+								setTimeout( processBatch, retryMs );
 							} else {
 								// Continue with next batch
 								processBatch();

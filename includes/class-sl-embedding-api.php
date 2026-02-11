@@ -19,6 +19,9 @@ class SL_Embedding_API {
 	/** @var array Accumulated API errors for user notification */
 	private static array $api_errors = [];
 
+	/** @var int HTTP status code from the most recent embed() call (0 = no call made yet). */
+	private static int $last_http_code = 0;
+
 	/** @var int Max errors to store */
 	private const MAX_ERRORS = 10;
 
@@ -59,7 +62,16 @@ class SL_Embedding_API {
 	 * @return array|false      Array of float[] vectors (same order as input),
 	 *                          or false on any error.
 	 */
+	/**
+	 * Whether the most recent embed() call was stopped by a 429 rate-limit response.
+	 */
+	public static function was_rate_limited(): bool {
+		return self::$last_http_code === 429;
+	}
+
 	public function embed( array $texts ) {
+		self::$last_http_code = 0; // Reset before each new embed request
+
 		if ( empty( $this->api_key ) ) {
 			SL_Debug::log( 'api', 'ERROR: API key is empty' );
 			return false;
@@ -103,7 +115,7 @@ class SL_Embedding_API {
 	 * @param string[] $texts
 	 * @return array|false
 	 */
-	private function embed_batch( array $texts, int $attempt = 1 ) {
+	private function embed_batch( array $texts ) {
 		// Build requests array for batchEmbedContents
 		$requests = [];
 		foreach ( $texts as $text ) {
@@ -159,20 +171,11 @@ class SL_Embedding_API {
 		] );
 
 		if ( $code !== 200 ) {
+			self::$last_http_code = $code;
 			SL_Debug::log( 'api', 'ERROR: Non-200 response', [
 				'code' => $code,
 				'body' => substr( $body, 0, 500 ),
 			] );
-
-			// Retry on rate limit (429) up to 3 times with a 2-second delay
-			if ( $code === 429 && $attempt <= 3 ) {
-				SL_Debug::log( 'api', "Rate limited (429) – retrying in 2s (attempt {$attempt}/3)", [
-					'texts_count' => count( $texts ),
-				] );
-				sleep( 2 );
-				return $this->embed_batch( $texts, $attempt + 1 );
-			}
-
 			return false;
 		}
 
