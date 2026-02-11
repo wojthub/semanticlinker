@@ -38,6 +38,9 @@ class SL_Matcher {
 	/** Transient key for pre-packed title embedding cache (avoids 30-40s DB reload per batch). */
 	private const TARGET_CACHE_KEY = 'sl_matching_target_cache';
 
+	/** Filename for filesystem-based embedding cache (stored in wp-content/uploads/). */
+	private const TARGET_CACHE_FILE = 'semanticlinker-target-cache.bin';
+
 	/** Maximum anchor clusters to store in transient (memory protection). */
 	private const MAX_CLUSTERS = 3000;
 
@@ -101,6 +104,28 @@ class SL_Matcher {
 	 */
 	private static function get_custom_url_threshold(): float {
 		return (float) SL_Settings::get( 'custom_url_threshold', self::CUSTOM_URL_DEFAULT_THRESHOLD );
+	}
+
+	/**
+	 * Absolute path to the filesystem-based target embedding cache file.
+	 * Uses wp-content/uploads/ which is guaranteed writable on every WordPress install.
+	 *
+	 * @return string
+	 */
+	private static function get_cache_file_path(): string {
+		$upload_dir = wp_upload_dir();
+		return $upload_dir['basedir'] . '/' . self::TARGET_CACHE_FILE;
+	}
+
+	/**
+	 * Delete the target embedding cache from both filesystem and DB option.
+	 */
+	private static function delete_target_cache(): void {
+		$file = self::get_cache_file_path();
+		if ( file_exists( $file ) ) {
+			@unlink( $file );
+		}
+		delete_option( self::TARGET_CACHE_KEY );  // clean up legacy DB entries
 	}
 
 	/**
@@ -548,7 +573,7 @@ class SL_Matcher {
 		}
 
 		// Clean up any leftover cache from a previous abandoned run.
-		delete_option( self::TARGET_CACHE_KEY );
+		self::delete_target_cache();
 
 		SL_Debug::log( 'matcher', '=== BATCH MATCHING INITIALIZED ===' );
 
@@ -586,18 +611,27 @@ class SL_Matcher {
 			}
 		}
 
-		// Store via update_option (not set_transient) to guarantee DB persistence.
-		// set_transient() with an object cache (Redis/Memcached) may silently drop items
-		// that exceed the cache's per-item size limit (~3.8 MB), causing cache misses.
-		// update_option(..., false) always writes to wp_options and falls back to DB on read.
-		// gzcompress reduces payload from ~3.8 MB to ~2.2 MB for MySQL max_allowed_packet safety.
+		// Store via filesystem (wp-content/uploads/) to bypass:
+		//   1. MySQL max_allowed_packet limits (often 1-4 MB on shared hosting)
+		//   2. Object cache (Redis/Memcached) per-item size limits (~3.8 MB)
+		// Both caused silent cache misses with set_transient() / update_option().
+		// wp-content/uploads/ is always writable by WordPress.
 		$compressed = gzcompress( serialize( $target_cache ), 6 );
-		update_option( self::TARGET_CACHE_KEY, $compressed, false );
+		$cache_file = self::get_cache_file_path();
+		$bytes_written = file_put_contents( $cache_file, $compressed, LOCK_EX );
 		SL_Debug::log( 'matcher', 'Target embeddings cached', [
 			'posts_cached'       => count( $title_rows ),
 			'custom_urls_cached' => count( $custom_urls ),
 			'size_kb'            => round( strlen( $compressed ) / 1024, 1 ),
+			'storage'            => $bytes_written !== false ? 'filesystem' : 'FAILED',
+			'file'               => basename( $cache_file ),
 		] );
+		if ( $bytes_written === false ) {
+			// Filesystem write failed (permissions?) — log and fall back to DB option.
+			// This is a degraded path: get_option() may also fail if data exceeds max_allowed_packet.
+			SL_Debug::log( 'matcher', 'WARNING: Filesystem cache write failed, falling back to update_option' );
+			update_option( self::TARGET_CACHE_KEY, $compressed, false );
+		}
 		unset( $title_rows, $target_cache, $compressed );  // Free memory before building progress transient
 
 		// Load existing anchors from DB - store only anchor + URL (no embeddings to save transient space)
@@ -705,7 +739,7 @@ class SL_Matcher {
 		// Phase: Complete
 		if ( $progress['phase'] === 'complete' ) {
 			delete_transient( self::PROGRESS_KEY );
-			delete_option( self::TARGET_CACHE_KEY );
+			self::delete_target_cache();
 			return [
 				'complete' => true,
 				'message'  => sprintf(
@@ -722,9 +756,27 @@ class SL_Matcher {
 
 		// Load target map from the cache populated during init_matching().
 		// Avoids the 30-40s DB+JSON-decode penalty that previously hit every batch.
-		$raw          = get_option( self::TARGET_CACHE_KEY, false );
-		$target_cache = $raw ? unserialize( gzuncompress( $raw ) ) : false;
-		$target_map   = [];
+		// Primary: filesystem cache (no MySQL/object-cache size limits).
+		// Fallback: DB option (legacy path, may also fail on constrained servers).
+		$target_cache = false;
+		$cache_file   = self::get_cache_file_path();
+
+		if ( file_exists( $cache_file ) ) {
+			$raw = file_get_contents( $cache_file );
+			if ( $raw !== false ) {
+				$target_cache = unserialize( gzuncompress( $raw ) );
+			}
+		}
+
+		// Fallback to DB option if filesystem cache is missing/unreadable.
+		if ( $target_cache === false ) {
+			$raw = get_option( self::TARGET_CACHE_KEY, false );
+			if ( $raw ) {
+				$target_cache = unserialize( gzuncompress( $raw ) );
+			}
+		}
+
+		$target_map = [];
 
 		if ( $target_cache ) {
 			foreach ( $target_cache as $key => $cached ) {
@@ -1563,7 +1615,7 @@ class SL_Matcher {
 		$had_progress = get_transient( self::PROGRESS_KEY ) !== false;
 
 		delete_transient( self::PROGRESS_KEY );
-		delete_option( self::TARGET_CACHE_KEY );
+		self::delete_target_cache();
 
 		// Also cancel indexer if needed (prevent recursion with false flag)
 		if ( $cancel_indexer ) {
