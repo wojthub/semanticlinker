@@ -547,6 +547,9 @@ class SL_Matcher {
 			ini_set( 'memory_limit', '512M' );
 		}
 
+		// Clean up any leftover cache from a previous abandoned run.
+		delete_option( self::TARGET_CACHE_KEY );
+
 		SL_Debug::log( 'matcher', '=== BATCH MATCHING INITIALIZED ===' );
 
 		// Use lightweight query - only post IDs, no embedding vectors
@@ -583,12 +586,19 @@ class SL_Matcher {
 			}
 		}
 
-		set_transient( self::TARGET_CACHE_KEY, $target_cache, HOUR_IN_SECONDS );
+		// Store via update_option (not set_transient) to guarantee DB persistence.
+		// set_transient() with an object cache (Redis/Memcached) may silently drop items
+		// that exceed the cache's per-item size limit (~3.8 MB), causing cache misses.
+		// update_option(..., false) always writes to wp_options and falls back to DB on read.
+		// gzcompress reduces payload from ~3.8 MB to ~2.2 MB for MySQL max_allowed_packet safety.
+		$compressed = gzcompress( serialize( $target_cache ), 6 );
+		update_option( self::TARGET_CACHE_KEY, $compressed, false );
 		SL_Debug::log( 'matcher', 'Target embeddings cached', [
 			'posts_cached'       => count( $title_rows ),
 			'custom_urls_cached' => count( $custom_urls ),
+			'size_kb'            => round( strlen( $compressed ) / 1024, 1 ),
 		] );
-		unset( $title_rows, $target_cache );  // Free memory before building progress transient
+		unset( $title_rows, $target_cache, $compressed );  // Free memory before building progress transient
 
 		// Load existing anchors from DB - store only anchor + URL (no embeddings to save transient space)
 		// Embeddings will be computed on-the-fly during batch processing
@@ -695,7 +705,7 @@ class SL_Matcher {
 		// Phase: Complete
 		if ( $progress['phase'] === 'complete' ) {
 			delete_transient( self::PROGRESS_KEY );
-			delete_transient( self::TARGET_CACHE_KEY );
+			delete_option( self::TARGET_CACHE_KEY );
 			return [
 				'complete' => true,
 				'message'  => sprintf(
@@ -712,7 +722,8 @@ class SL_Matcher {
 
 		// Load target map from the cache populated during init_matching().
 		// Avoids the 30-40s DB+JSON-decode penalty that previously hit every batch.
-		$target_cache = get_transient( self::TARGET_CACHE_KEY );
+		$raw          = get_option( self::TARGET_CACHE_KEY, false );
+		$target_cache = $raw ? unserialize( gzuncompress( $raw ) ) : false;
 		$target_map   = [];
 
 		if ( $target_cache ) {
@@ -1552,7 +1563,7 @@ class SL_Matcher {
 		$had_progress = get_transient( self::PROGRESS_KEY ) !== false;
 
 		delete_transient( self::PROGRESS_KEY );
-		delete_transient( self::TARGET_CACHE_KEY );
+		delete_option( self::TARGET_CACHE_KEY );
 
 		// Also cancel indexer if needed (prevent recursion with false flag)
 		if ( $cancel_indexer ) {
