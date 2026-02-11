@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SL_Matcher {
 
 	/** Number of source posts to process per batch for matching. */
-	private const BATCH_SIZE = 25;
+	private const BATCH_SIZE = 10;
 
 	/** Number of links to filter with Gemini per batch. */
 	private const GEMINI_BATCH_SIZE = 20;
@@ -622,6 +622,10 @@ class SL_Matcher {
 		if ( $current_bytes < 512 * 1024 * 1024 ) {
 			ini_set( 'memory_limit', '512M' );
 		}
+
+		// Matching computation is CPU-intensive. Extend execution time to avoid
+		// PHP fatal "Maximum execution time exceeded" on servers with 30s default.
+		@ini_set( 'max_execution_time', '120' );
 
 		$progress = get_transient( self::PROGRESS_KEY );
 
