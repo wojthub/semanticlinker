@@ -176,8 +176,8 @@ class SL_Settings {
 		/* Gemini anchor filter – boolean checkbox */
 		$s['gemini_anchor_filter'] = ! empty( $input['gemini_anchor_filter'] );
 
-		/* Same category only – boolean checkbox (default true) */
-		$s['same_category_only'] = ! isset( $input['same_category_only'] ) || ! empty( $input['same_category_only'] );
+		/* Same category only – boolean checkbox */
+		$s['same_category_only'] = ! empty( $input['same_category_only'] );
 
 		/* Excluded post IDs – one per line or comma-separated */
 		$raw_ids = is_string( $input['excluded_post_ids'] ?? '' )

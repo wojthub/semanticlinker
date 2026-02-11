@@ -103,7 +103,7 @@ class SL_Embedding_API {
 	 * @param string[] $texts
 	 * @return array|false
 	 */
-	private function embed_batch( array $texts ) {
+	private function embed_batch( array $texts, int $attempt = 1 ) {
 		// Build requests array for batchEmbedContents
 		$requests = [];
 		foreach ( $texts as $text ) {
@@ -163,6 +163,16 @@ class SL_Embedding_API {
 				'code' => $code,
 				'body' => substr( $body, 0, 500 ),
 			] );
+
+			// Retry on rate limit (429) up to 3 times with a 2-second delay
+			if ( $code === 429 && $attempt <= 3 ) {
+				SL_Debug::log( 'api', "Rate limited (429) – retrying in 2s (attempt {$attempt}/3)", [
+					'texts_count' => count( $texts ),
+				] );
+				sleep( 2 );
+				return $this->embed_batch( $texts, $attempt + 1 );
+			}
+
 			return false;
 		}
 
